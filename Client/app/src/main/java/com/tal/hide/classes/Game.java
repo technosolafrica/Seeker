@@ -1,17 +1,17 @@
-package com.tal.hide;
+package com.tal.hide.classes;
 
 public class Game {
     // this class holds an instance of each game
     private String username;
     private String role;
-    private String gameid;
+    private int gameid;
     private String opponent;
     private boolean running;
     private boolean win;
-    private String move;
+    private boolean move;
     private String Uuid;
 
-    public Game(String username, String role, String gameid, String opponent, boolean running) {
+    public Game(String username, String role, int gameid, String opponent, boolean running) {
         this.username = username;
         this.role = role;
         this.gameid = gameid;
@@ -31,7 +31,7 @@ public class Game {
         return role;
     }
 
-    public String getGameid() {
+    public int getGameid() {
         return gameid;
     }
 
@@ -55,11 +55,11 @@ public class Game {
         this.win = win;
     }
 
-    public String getMove() {
+    public boolean getMove() {
         return move;
     }
 
-    public void setMove(String move) {
+    public void setMove(boolean move) {
         this.move = move;
     }
 

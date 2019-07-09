@@ -6,6 +6,7 @@ import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +21,7 @@ import com.tal.hide.utils.Constants;
 
 public class GameFragment extends Fragment {
     private boolean swap = true;
-    private String opponent;
+    final String TAG = "Knowingly GameFragment ";
 
     private GameViewModel mViewModel;
 
@@ -57,9 +58,16 @@ public class GameFragment extends Fragment {
         });
         //get opponent name
         Bundle args = getArguments();
-        //setup textfield for opponent
-        TextView opponentTextView = view.findViewById(R.id.txt_opponent);
-        opponentTextView.setText("Your role is :"+args.getString(Constants.keyRole));
+        if(args != null) {
+            //setup textfield for opponent
+            TextView opponentTextView = view.findViewById(R.id.txt_opponent);
+            opponentTextView.setText("Your opponent is :" + args.getString(Constants.keyOpponent));
+            //setup textfield for role
+            TextView roleTextView = view.findViewById(R.id.txt_role);
+            roleTextView.setText("Your role is :" + args.getString(Constants.keyRole));
+        }else{
+            Log.d(TAG, " args are null ");
+        }
         return view;
     }
 
@@ -69,5 +77,4 @@ public class GameFragment extends Fragment {
         mViewModel = ViewModelProviders.of(this).get(GameViewModel.class);
         // TODO: Use the ViewModel
     }
-
 }

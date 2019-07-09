@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.tal.hide.Loading"
+    tools:context="com.tal.hide.ui.game.Loading"
     android:id="@+id/loadingContainer">
 
     <!-- TODO: Update blank fragment layout -->

@@ -3,6 +3,7 @@ package com.tal.hide;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -11,6 +12,7 @@ import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,8 +25,6 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements ConnectionListener {
     private final static String TAG = "Knowingly Main ";
-    final static int REQUEST_ACCOUNT_CODE = 123342;
-
     private WebClient webClient;
     private EditText ed_user;
 
@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         Log.d(TAG, "on create ");
     }
 
-    public void connectWebSocket(){
+    public void connectWebSocket() {
         //create new Websocket
         webClient = new WebClient(getURI(), getApplicationContext());
         //set the account name as user ID
@@ -57,40 +57,43 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(MainActivity.this,reason,Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, reason, Toast.LENGTH_LONG).show();
+                //if(!reason.contains("Connected!")) finish(); //if not connected then finish
             }
         });
     }
 
-    public void onReady(View v){
+    public void onReady(View v) {
         //when user clicks play
         String username = ed_user.getText().toString();
-        if(webClient!= null && !webClient.isClosed()){
-            //get username and dispatch to server
-            webClient.sendReady(username);
-            //calls progress spinner asynctask
-            //webClient.loading(getApplicationContext());
+        if (webClient != null && !webClient.isClosed()) {
             //open the game activity
             Intent gameIntent = new Intent(this, GameActivity.class);
-            startActivity(gameIntent);
-        }else{
-            Toast fail = Toast.makeText(this, " Connection Failure ", Toast.LENGTH_LONG);
-            fail.show();
+            //put username on intent
+            gameIntent.putExtra(Constants.keyUser, username);
+            startActivityForResult(gameIntent, Constants.REQUEST_GAME_CODE);
+            //get username and dispatch to server
+            //webClient.sendReady(username);
+            //calls progress spinner asynctask
+            //webClient.loading(getApplicationContext());
+        } else {
+            //Toast.makeText(this, " Connection Failure ", Toast.LENGTH_LONG).show();
+            //try reconnect
+            reconnect();
         }
     }
 
     @Override
     public void reconnect() {
         //reconnect if connection closed
-        if(webClient!= null){
+        if (webClient != null) {
             //attr cannot be reused so completely destroy
             webClient = null;
         }
-        //create new socket & reconnect
-        webClient = new WebClient(getURI(), getApplicationContext());
+        connectWebSocket();
     }
 
-    public String getAccountName(){
+    public String getAccountName() {
         String email = "default@tal.app";
         //get unique account name to server as user ID
         AccountManager accountManager = AccountManager.get(getApplicationContext());
@@ -99,15 +102,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         Pattern emailPattern = Patterns.EMAIL_ADDRESS;
         //iterate through accounts store on client device
         for (Account account : accounts) {
-            if(emailPattern.matcher(account.name).matches()){
+            if (emailPattern.matcher(account.name).matches()) {
                 email = account.name;//store email from first account
                 break;//if email received then break
-            }else{
+            } else {
                 email = account.name;
-                Log.d(TAG, " match fail account name : "+account.name);
+                Log.d(TAG, " match fail account name : " + account.name);
             }
         }
-        Log.d(TAG, " email : "+email);
+        Log.d(TAG, " email : " + email);
         return email;
         /*Intent getAccountIntent = AccountManager.newChooseAccountIntent(null, null,
                 new String[]{"com.google","com.google.android.legacymap"}, false, null, null, null, null);
@@ -119,14 +122,40 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         super.onActivityResult(requestCode, resultCode, data);
         String identifier;
         //get the account name from the chosen account
-        if(requestCode == REQUEST_ACCOUNT_CODE){
-            if(resultCode == RESULT_OK){
+        if (requestCode == Constants.REQUEST_ACCOUNT_CODE) {
+            if (resultCode == RESULT_OK) {
                 identifier = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
-            }else if(resultCode == RESULT_CANCELED){
+            } else if (resultCode == RESULT_CANCELED) {
                 //if user cancels then use device id
                 identifier = Settings.Secure.getString(getContentResolver(), Settings.Secure._ID);
-            }else identifier = null;
+            } else identifier = null;
+        } else if (requestCode == Constants.REQUEST_GAME_CODE) {
+            //if reply is from game intent
+            if (resultCode == RESULT_OK) {
+                //then get result win or loose from game
+                boolean win = data.getBooleanExtra(Constants.keyOutcome, false);
+                //toast user result
+                if (win) {
+                    Toast.makeText(MainActivity.this, " You Won! ", Toast.LENGTH_LONG).show();
+                    //play sound
+                    MediaPlayer.create(this, Settings.System.DEFAULT_RINGTONE_URI).start();
+                }
+
+                else {
+                    Toast.makeText(MainActivity.this, " You Lost! ", Toast.LENGTH_LONG).show();
+                    //play sound
+                    MediaPlayer.create(this, Settings.System.DEFAULT_ALARM_ALERT_URI).start();
+                }
+            } else if (requestCode == RESULT_CANCELED) {
+                Toast.makeText(MainActivity.this, " Game Ended ", Toast.LENGTH_LONG).show();
+            }
         }
+    }
+
+    void showPopUp(){
+        //Show the pop up of Winner
+        PopupWindow popUp = new PopupWindow();
+//        popUp.showAtLocation();
     }
 
     URI getURI(){

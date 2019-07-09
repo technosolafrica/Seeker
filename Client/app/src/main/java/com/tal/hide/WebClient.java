@@ -3,11 +3,12 @@ package com.tal.hide;
 import android.content.Context;
 import android.util.Log;
 
+import com.tal.hide.classes.Game;
 import com.tal.hide.utils.ConnectionListener;
 import com.tal.hide.utils.Constants;
 import com.tal.hide.utils.PairingListener;
-import com.tal.hide.utils.PairingProcess;
 
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -17,15 +18,16 @@ import org.java_websocket.handshake.ServerHandshake;
 import java.net.URI;
 
 public class WebClient extends WebSocketClient{
-    Dispatcher dispatcher = new Dispatcher();
+    static Dispatcher dispatcher = new Dispatcher();
     final String TAG = "Knowingly WebClient ";
 
     String identifier;
     private Context context;
-    private Game currentGame;
 
     PairingListener listener;
     ConnectionListener conn;
+
+    private Game currentGame;
 
     //Singleton
     private static WebClient client = null;
@@ -44,7 +46,7 @@ public class WebClient extends WebSocketClient{
     public void onOpen(ServerHandshake handshakedata) {
         // on connection : get account id and send
         //if user ID valid then send
-        this.send(dispatcher.sendIdentifier(identifier));
+        this.send(dispatcher.getIdentifier(identifier));
         Log.d(TAG, "on open send user ID : "+identifier);
         conn.alertConn("Connected!");
     }
@@ -64,14 +66,14 @@ public class WebClient extends WebSocketClient{
                     break;
                 case Constants.cmdPairResult:
                     //if pairing success
-                    Log.d(TAG, " on pair success :" + jsonMsg.toString());
                     currentGame = dispatcher.onPair(jsonMsg, identifier);
+                    Log.d(TAG, " curr game :" + currentGame.toString());
                     //run on ui
                     listener.pair(true);
                     break;
                 case Constants.cmdResult:
                     //if result successful
-                    dispatcher.onResult();
+                    dispatcher.onResult(jsonMsg);
                     //listen for result
                     listener.result(true);
                     break;
@@ -81,7 +83,7 @@ public class WebClient extends WebSocketClient{
                     break;
                 case Constants.cmdNoResult:
                     //if no result
-                    dispatcher.onNoResult();
+                    dispatcher.onNoResult(jsonMsg);
                     //listen for failed result
                     listener.result(false);
                     break;
@@ -105,6 +107,8 @@ public class WebClient extends WebSocketClient{
     public void onError(Exception ex) {
         conn.alertConn("Connection Error:  "+ex.getMessage());
         Log.d(TAG, "Connection Error: "+ex.getMessage());
+        ex.printStackTrace();
+        conn.reconnect();
     }
 
     public void setIdentifier(String identifier) {
@@ -120,10 +124,16 @@ public class WebClient extends WebSocketClient{
     public void sendThis(String data){
         //checks if connection still on
         if(this.isClosed()){
-            conn.reconnect();
+            //conn.reconnect();//will never be reached
             Log.d(TAG," reconnecting ....... ");
         }else{
-            this.send(data);
+            try{
+                this.send(data);
+            }catch (WebsocketNotConnectedException notConnected){
+                conn.alertConn(notConnected.getMessage());
+            }catch (IllegalStateException els){
+                conn.alertConn(els.getMessage());
+            }
         }
     }
 

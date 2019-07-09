@@ -1,5 +1,7 @@
 package com.tal.hide;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -7,6 +9,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.tal.hide.ui.game.GameFragment;
+import com.tal.hide.ui.game.Loading;
 import com.tal.hide.utils.Constants;
 import com.tal.hide.utils.PairingListener;
 
@@ -27,10 +30,15 @@ public class GameActivity extends AppCompatActivity implements PairingListener {
             loader.replace(R.id.container, loadFrag);
             loader.commitNow();
         }
-        //get instance of webClient
+        //now send ready to server
         webClient = WebClient.getInstance();
         webClient.setListener(this);
-        Log.d(TAG,"on Create : Listener set");
+        Log.d(TAG," Listener set");
+        //get username from intent
+        String user = getIntent().getStringExtra(Constants.keyUser);
+        //send the ready command
+        webClient.sendReady(user);
+        Log.d(TAG,"on Create");
     }
 
     @Override
@@ -42,8 +50,8 @@ public class GameActivity extends AppCompatActivity implements PairingListener {
                     Bundle args = new Bundle();
                     //put game data on game fragment
                     args.putString(Constants.keyRole, webClient.getCurrentGame().getRole());
-                    args.putString(Constants.keyOpponent, webClient.getCurrentGame().getRole());
-                    args.putString(Constants.keyGameId, webClient.getCurrentGame().getRole());
+                    args.putString(Constants.keyOpponent, webClient.getCurrentGame().getOpponent());
+                    args.putInt(Constants.keyGameId, webClient.getCurrentGame().getGameid());
                     //create game fragment and set data
                     GameFragment gameFragment = GameFragment.newInstance();
                     gameFragment.setArguments(args);
@@ -71,12 +79,10 @@ public class GameActivity extends AppCompatActivity implements PairingListener {
         //when user submits in fragment
         GameFragment fraggy = (GameFragment)getSupportFragmentManager().findFragmentByTag("GameFrag");
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction().remove(fraggy);
-        //create new dispatcher
-        Dispatcher dispatcher = new Dispatcher();
         //put data on new loading fragment
         Loading ld = Loading.newInstance();
         Bundle bd = new Bundle();
-        bd.putString("message","Awaiting Result!");
+        bd.putString("message","Awaiting "+webClient.getCurrentGame().getOpponent()+"'s Move!");
         ld.setArguments(bd);
         //show new loading fragment
         transaction.replace(R.id.container, ld, "LoadFrag");
@@ -84,11 +90,21 @@ public class GameActivity extends AppCompatActivity implements PairingListener {
 
         if(move) {
             //send the move
-            webClient.send(dispatcher.getPlay("true"));
+            webClient.sendThis(webClient.dispatcher.getPlay(true));
         }else {
             //send the move
-            webClient.send(dispatcher.getPlay("false"));
+            webClient.sendThis(webClient.dispatcher.getPlay(false));
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        //if user clicks back after attempting to pair
+        Log.d(TAG, " Back Pressed ");
+        //send eject
+        webClient.sendThis(webClient.dispatcher.getEject());
+        //call super to exec
+        super.onBackPressed();
     }
 
     @Override
@@ -97,11 +113,23 @@ public class GameActivity extends AppCompatActivity implements PairingListener {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                //get loading fragment and remove it
-                Loading resultLoad = (Loading)getSupportFragmentManager().findFragmentByTag("LoadFrag");
-                FragmentTransaction transaction = getSupportFragmentManager().beginTransaction().remove(resultLoad);
-                transaction.replace(R.id.container, GameFragment.newInstance(), "ResultFrag");
-                transaction.commit();
+                //if the result was successful then show result screen win or loose
+                if(resultSuccess){
+                    //get loading fragment and remove it
+                    Loading resultLoad = (Loading)getSupportFragmentManager().findFragmentByTag("LoadFrag");
+                    getSupportFragmentManager().beginTransaction().remove(resultLoad);
+                    //put winning data
+                    Intent theGameResultIntent = getIntent();
+                    theGameResultIntent.putExtra(Constants.keyOutcome, webClient.dispatcher.currentGame.isWin());
+                    //end activity
+                    setResult(Activity.RESULT_OK, theGameResultIntent);
+                    finish();
+                }else{
+                    //if result = false then no result sent so finish
+                    setResult(Activity.RESULT_CANCELED);
+                    //end activity
+                    finish();
+                }
             }
         });
     }

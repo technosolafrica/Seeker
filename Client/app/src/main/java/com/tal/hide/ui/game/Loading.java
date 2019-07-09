@@ -1,7 +1,6 @@
-package com.tal.hide;
+package com.tal.hide.ui.game;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -9,6 +8,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import com.tal.hide.R;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -23,7 +24,7 @@ public class Loading extends Fragment {
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "message";
     private static final String ARG_PARAM2 = "param2";
-    private static final String TAG = "Knowingly Loading Fragment ";
+    private static final String TAG = "Knowingly Loading Frag ";
 
     // TODO: Rename and change types of parameters
     private String mParam1;
