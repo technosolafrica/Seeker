@@ -119,8 +119,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setupActionBar();
+          super.onCreate(savedInstanceState);
+          setupActionBar();
     }
 
     /**
@@ -190,8 +190,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            bindPreferenceSummaryToValue(findPreference("example_text"));
-            bindPreferenceSummaryToValue(findPreference("example_list"));
+            bindPreferenceSummaryToValue(findPreference("key_display_name"));
+            bindPreferenceSummaryToValue(findPreference("key_theme"));
         }
 
         @Override

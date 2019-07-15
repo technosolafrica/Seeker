@@ -2,10 +2,11 @@ package com.tal.hide.utils;
 
 public class Constants {
     //keeps all commands and constants\
-    public static final String SERVER = "ws://172.16.40.105:5000"; //server url
+    public static final String SERVER = "ws://192.168.43.248:5000"; //server url
 
     public final static int REQUEST_ACCOUNT_CODE = 123;
     public final static int REQUEST_GAME_CODE = 129;
+    public final static int REQUEST_SETTING_CODE = 131;
 
     public static final String keyCommand = "command"; //key command
     public static final String keyUser = "username"; // key user

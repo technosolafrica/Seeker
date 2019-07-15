@@ -2,16 +2,30 @@ package com.tal.hide;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.ActionBar;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.provider.Settings;
 import android.support.annotation.Nullable;
+import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.preference.PreferenceManager;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.util.Patterns;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,7 +40,10 @@ import java.util.regex.Pattern;
 public class MainActivity extends AppCompatActivity implements ConnectionListener {
     private final static String TAG = "Knowingly Main ";
     private WebClient webClient;
-    private EditText ed_user;
+    private TextView txtUser;
+    private ConstraintLayout ltMain;
+    SharedPreferences.OnSharedPreferenceChangeListener listener;
+    private String playerName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,11 +51,65 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //init edit text field
-        ed_user = (EditText) findViewById(R.id.ed_user);
+        //init text field
+        txtUser = findViewById(R.id.txt_user);
         //connect to server
         connectWebSocket();
-        Log.d(TAG, "on create ");
+        //initialize constraint layout main
+        ltMain = findViewById(R.id.lt_main);
+
+        //instantiate the tool bar
+        //Toolbar topToolbar = findViewById(R.id.toolbar_top);
+        //setSupportActionBar(topToolbar);
+
+        //shared prefs
+        playerName = sharedPrefs(); //test
+        txtUser.setText(playerName);
+        //log
+        Log.d(TAG, " on create ");
+    }
+
+    public String sharedPrefs(){
+        //setup shared preferences
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        //get editor
+        final SharedPreferences.Editor editor = sharedPreferences.edit();
+        //register listener
+        listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+            @Override
+            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+                //
+                if(key.equals("key_display_name")){
+                    playerName = sharedPreferences.getString("key_display_name", "Noobie");
+                    editor.putString("key_display_name", playerName);
+                    editor.apply();
+                    txtUser.setText(playerName);
+                }
+            }
+        };
+        sharedPreferences.registerOnSharedPreferenceChangeListener(listener);
+        Log.d(TAG, "on shared prefs name ");
+        return sharedPreferences.getString("key_display_name", "Noobie");
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        //put menu item
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.action_settings://start settings activity on click settings
+                Intent settingsIntent = new Intent(this, SettingsActivity.class);
+                startActivityForResult(settingsIntent, Constants.REQUEST_SETTING_CODE);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     public void connectWebSocket() {
@@ -65,13 +136,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
 
     public void onReady(View v) {
         //when user clicks play
-        String username = ed_user.getText().toString();
         if (webClient != null && !webClient.isClosed()) {
             //open the game activity
             Intent gameIntent = new Intent(this, GameActivity.class);
             //put username on intent
-            gameIntent.putExtra(Constants.keyUser, username);
-            startActivityForResult(gameIntent, Constants.REQUEST_GAME_CODE);
+            gameIntent.putExtra(Constants.keyUser, playerName);
+             startActivityForResult(gameIntent, Constants.REQUEST_GAME_CODE);
             //get username and dispatch to server
             //webClient.sendReady(username);
             //calls progress spinner asynctask
@@ -137,14 +207,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
                 //toast user result
                 if (win) {
                     Toast.makeText(MainActivity.this, " You Won! ", Toast.LENGTH_LONG).show();
+                    //show popup
+                    showPopUp(getResources().getString(R.string.win),R.drawable.ff3);
                     //play sound
-                    MediaPlayer.create(this, Settings.System.DEFAULT_RINGTONE_URI).start();
+                    MediaPlayer.create(this, R.raw.goalpass).start();
                 }
 
                 else {
                     Toast.makeText(MainActivity.this, " You Lost! ", Toast.LENGTH_LONG).show();
+                    //show popup
+                    showPopUp(getResources().getString(R.string.lose),R.drawable.ff7);
                     //play sound
-                    MediaPlayer.create(this, Settings.System.DEFAULT_ALARM_ALERT_URI).start();
+                    MediaPlayer.create(this, R.raw.quaquafail).start();
                 }
             } else if (requestCode == RESULT_CANCELED) {
                 Toast.makeText(MainActivity.this, " Game Ended ", Toast.LENGTH_LONG).show();
@@ -152,10 +226,30 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         }
     }
 
-    void showPopUp(){
-        //Show the pop up of Winner
-        PopupWindow popUp = new PopupWindow();
-//        popUp.showAtLocation();
+    void showPopUp(String result, int imageId){
+        //instantiate popup layout
+        LayoutInflater layoutInflater = (LayoutInflater) MainActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View popupView = layoutInflater.inflate(R.layout.activity_result_pop_up, null);
+        //instantiate popup window
+        final PopupWindow popupWindow = new PopupWindow(popupView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        //instantiate textview
+        TextView txtResult = popupView.findViewById(R.id.txt_rez);
+        //instantiate button
+        ImageButton clsPopUp = popupView.findViewById(R.id.im_result);
+        //set either win or lose image
+        clsPopUp.setBackgroundResource(imageId);
+        //clsPopUp.setImageResource(getResources().getIdentifier("com.tal.hide:drawable/"+imageName, null, null));
+        //set either win or lose text
+        txtResult.setText(result);
+        //display popup
+        popupWindow.showAtLocation(ltMain, Gravity.CENTER, 0,0);
+        //set on close listener
+        clsPopUp.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                popupWindow.dismiss();
+            }
+        });
     }
 
     URI getURI(){
@@ -175,5 +269,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionListene
         super.onDestroy();
         //close socket on destroy
         webClient.close();
+        //unregister shared prefs listener
+        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(listener);
     }
 }

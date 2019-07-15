@@ -3,6 +3,8 @@
     <string name="user">Please Enter Preferred Username</string>
     <string name="pairing">Searching For Pair</string>
     <string name="submit">Submit</string>
+    <string name="win">You Win!</string>
+    <string name="lose">You Lose!</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
@@ -21,6 +23,10 @@
     <string name="pref_title_display_name">Display name</string>
     <string name="pref_default_display_name">John Smith</string>
 
+    <string name="pref_title_game_theme">Choose Theme</string>
+    <string name="pref_desc_replay">Choose whether to replay instantly</string>
+    <string name="pref_title_replay">Instant Replay</string>
+
     <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
     <string-array name="pref_example_list_titles">
         <item>Always</item>
@@ -28,6 +34,18 @@
         <item>Never</item>
     </string-array>
     <string-array name="pref_example_list_values">
+        <item>1</item>
+        <item>0</item>
+        <item>-1</item>
+    </string-array>
+
+    <!-- game theme prefs -->
+    <string-array name="pref_theme_titles">
+        <item>Light</item>
+        <item>Dark</item>
+        <item>Default</item>
+    </string-array>
+    <string-array name="pref_theme_values">
         <item>1</item>
         <item>0</item>
         <item>-1</item>
